@@ -8,23 +8,34 @@ st.title("💼 Calculadora Avanzada de Comisiones")
 # -------------------------
 # FUNCIONES
 # -------------------------
-
 def fmt_num(v):
     return f"{v:,.2f}" if math.isfinite(v) else "N/A"
 
+def fmt_pct(v):
+    return f"{v:.2f}%"
+
 # -------------------------
-# INPUT
+# INPUT VARIABLES
 # -------------------------
 
+NUM_VARIABLES = 6
 rows = []
 
-for i in range(3):
-    col1, col2, col3, col4 = st.columns(4)
+st.markdown("## 📋 Variables de Comisión")
+
+for i in range(NUM_VARIABLES):
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     nombre = col1.text_input(f"Nombre {i+1}", f"Variable {i+1}", key=f"n{i}")
     meta = col2.number_input(f"Meta {i+1}", min_value=0.0, key=f"m{i}")
     cumplimiento = col3.number_input(f"Cumplimiento {i+1}", min_value=0.0, key=f"c{i}")
     monto = col4.number_input(f"Monto {i+1}", min_value=0.0, key=f"mo{i}")
+
+    if meta > 0:
+        pct = (cumplimiento / meta) * 100
+        col5.markdown(f"**{fmt_pct(pct)}**")
+    else:
+        col5.markdown("—")
 
     rows.append({
         "nombre": nombre,
@@ -37,6 +48,7 @@ for i in range(3):
 # SIMULADOR
 # -------------------------
 
+st.markdown("---")
 st.markdown("## 📊 Simulación de desempeño")
 
 for row in rows:
@@ -48,6 +60,7 @@ for row in rows:
     cumplimiento = row["cumplimiento"]
 
     porcentaje = (cumplimiento / meta) * 100
+
     meta_90 = meta * 0.9
 
     dias_totales = 30
@@ -59,22 +72,23 @@ for row in rows:
     proyeccion_pct = (proyeccion / meta) * 100
 
     gap = max(0, meta_90 - cumplimiento)
+
     cumplira = proyeccion >= meta_90
 
     # BARRA
     bar_actual = min(100, porcentaje)
-    bar_proyectado = min(100, proyeccion_pct)
+    bar_proy = min(100, proyeccion_pct)
 
-    color_barra = "#22c55e" if cumplira else "#f87171"
+    color_actual = "#22c55e" if cumplira else "#f87171"
     color_proy = "#bbf7d0" if cumplira else "#fecaca"
 
     st.markdown(f"### {row['nombre']}")
 
-    # ✅ HTML CORRECTO (SIN ERROR)
+    # ✅ BARRA VISUAL
     st.markdown(f"""
     <div style="position:relative;height:10px;background:#f1f5f9;border-radius:9999px;overflow:hidden;">
-        <div style="position:absolute;left:0;width:{bar_proyectado:.1f}%;background:{color_proy};height:100%;"></div>
-        <div style="position:absolute;left:0;width:{bar_actual:.1f}%;background:{color_barra};height:100%;"></div>
+        <div style="position:absolute;left:0;width:{bar_proy:.1f}%;background:{color_proy};height:100%;"></div>
+        <div style="position:absolute;left:0;width:{bar_actual:.1f}%;background:{color_actual};height:100%;"></div>
         <div style="position:absolute;left:90%;width:2px;background:#ea580c;height:100%;"></div>
     </div>
 
@@ -86,6 +100,9 @@ for row in rows:
     """, unsafe_allow_html=True)
 
     # ✅ TARJETAS
+    adicional = (proyeccion - meta_90) if cumplira else gap
+    ritmo_necesario = gap / dias_restantes if dias_restantes > 0 else 0
+
     st.markdown(f"""
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;">
 
@@ -103,17 +120,17 @@ for row in rows:
 
         <div style="background:{'#f0fdf4' if cumplira else '#fff1f2'};padding:10px;border-radius:6px;">
             <div style="font-size:0.7rem;color:#64748b;">
-                {'Excedente' if cumplira else 'Faltante'}
+                {'Excedente proyectado' if cumplira else 'Faltante'}
             </div>
             <div style="font-weight:bold;color:{'#15803d' if cumplira else '#b91c1c'};">
-                {fmt_num(proyeccion - meta_90 if cumplira else gap)}
+                {fmt_num(adicional)}
             </div>
         </div>
 
         <div style="background:{'#f8fafc' if cumplira else '#fff7ed'};padding:10px;border-radius:6px;">
             <div style="font-size:0.7rem;color:#64748b;">Ritmo necesario</div>
             <div style="font-weight:bold;color:{'#94a3b8' if cumplira else '#ea580c'};">
-                {"En ritmo" if cumplira else fmt_num(gap / dias_restantes if dias_restantes > 0 else 0)}
+                {"En ritmo" if cumplira else fmt_num(ritmo_necesario)}
             </div>
         </div>
 
