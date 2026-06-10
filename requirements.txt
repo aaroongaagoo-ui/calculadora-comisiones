@@ -1,4 +1,1 @@
-streamlit
-pandas
-openpyxl
-numpy
+streamlit>=1.35
